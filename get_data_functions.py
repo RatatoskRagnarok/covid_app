@@ -20,29 +20,29 @@ uk_dict = {'uk': ['https://api.coronavirus.data.gov.uk/v2/data?areaType=overview
                   '=newPillarOneTwoTestsByPublishDate&format=csv',
                   'https://api.coronavirus.data.gov.uk/v2/data?areaType=overview&metric'
                   '=cumPeopleVaccinatedSecondDoseByPublishDate&format=csv'],
-           'nation': ['https://api.coronavirus.data.gov.uk/v2/data?areaType=overview&metric=newCasesBySpecimenDate'
+           'nation': ['https://api.coronavirus.data.gov.uk/v2/data?areaType=nation&metric=newCasesBySpecimenDate'
                       '&metric=cumCasesBySpecimenDateRate&metric=cumCasesBySpecimenDate&metric'
                       '=newDeaths28DaysByDeathDate&metric=cumDeaths28DaysByDeathDate&format=csv',
-                      'https://api.coronavirus.data.gov.uk/v2/data?areaType=overview&metric'
+                      'https://api.coronavirus.data.gov.uk/v2/data?areaType=nation&metric'
                       '=cumDeaths28DaysByDeathDateRate&metric=newAdmissions&metric=cumAdmissions&metric'
                       '=covidOccupiedMVBeds&metric=hospitalCases&format=csv',
-                      'https://api.coronavirus.data.gov.uk/v2/data?areaType=overview&metric'
+                      'https://api.coronavirus.data.gov.uk/v2/data?areaType=nation&metric'
                       '=transmissionRateGrowthRateMax&metric=transmissionRateGrowthRateMin&metric=transmissionRateMax'
                       '&metric=transmissionRateMin&metric=newCasesBySpecimenDateRollingRate&format=csv',
-                      'https://api.coronavirus.data.gov.uk/v2/data?areaType=overview&metric'
+                      'https://api.coronavirus.data.gov.uk/v2/data?areaType=nation&metric'
                       '=newDailyNsoDeathsByDeathDate&metric=newDeaths28DaysByDeathDateRollingRate&metric'
                       '=cumVaccinationCompleteCoverageByPublishDatePercentage&metric'
                       '=newPeopleVaccinatedCompleteByPublishDate&metric=newPeopleVaccinatedFirstDoseByPublishDate'
                       '&format=csv',
-                      'https://api.coronavirus.data.gov.uk/v2/data?areaType=overview&metric'
+                      'https://api.coronavirus.data.gov.uk/v2/data?areaType=nation&metric'
                       '=newPeopleVaccinatedSecondDoseByPublishDate&metric=cumPeopleVaccinatedCompleteByPublishDate'
                       '&metric=cumPeopleVaccinatedFirstDoseByPublishDate&metric'
                       '=cumPeopleVaccinatedSecondDoseByPublishDate&metric'
                       '=uniqueCasePositivityBySpecimenDateRollingSum&format=csv'],
-           'region': ['https://api.coronavirus.data.gov.uk/v2/data?areaType=overview&metric=newCasesBySpecimenDate'
+           'region': ['https://api.coronavirus.data.gov.uk/v2/data?areaType=region&metric=newCasesBySpecimenDate'
                       '&metric=cumCasesBySpecimenDateRate&metric=cumCasesBySpecimenDate&metric'
                       '=newDeaths28DaysByDeathDate&metric=cumDeaths28DaysByDeathDate&format=csv',
-                      'https://api.coronavirus.data.gov.uk/v2/data?areaType=overview&metric'
+                      'https://api.coronavirus.data.gov.uk/v2/data?areaType=region&metric'
                       '=cumDeaths28DaysByDeathDateRate&metric=newCasesBySpecimenDateRollingRate&metric'
                       '=newDailyNsoDeathsByDeathDate&metric=newDeaths28DaysByDeathDateRollingRate&metric'
                       '=uniqueCasePositivityBySpecimenDateRollingSum&format=csv'],

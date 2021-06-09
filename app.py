@@ -31,6 +31,46 @@ with st.beta_expander('See my data sources...'):
     st.write('US data comes from [Covid ActNow](https://covidactnow.org/?s=1859777) through their API, details of '
              'which are [here](https://apidocs.covidactnow.org/).')
 
-df = prep_uk_df(uk_dict['uk'])
-st.dataframe(df)
-st.write(df.columns)
+# getting update date
+try:
+    with open('updates.json') as f:
+        updates = json.load(f)
+        update = updates['update']
+except FileNotFoundError:
+    update = None
+
+
+@st.cache
+def squirrelling_data(update):
+    # uk dfs
+    uk = prep_uk_df(uk_dict['uk'])
+    nat = prep_uk_df(uk_dict['nation'])
+    reg = prep_uk_df(uk_dict['region'])
+    utlas = prep_uk_df(uk_dict['utla'])
+    ltlas = prep_uk_df(uk_dict['ltla'])
+    las = pd.concat([utlas, ltlas])
+    las = las.reset_index().drop_duplicates(subset=['date', 'areaCode', 'newCases'], keep='first').set_index('date')
+    # TODO msoa
+
+    # uk places lists
+    uk_places = ['UK'] + list(nat.areaName.unique()) + list(reg.areaName.unique())
+    la_places = list(las.areaName.unique())
+    # TODO msoa places
+
+
+    # saving update date
+    update = date.today()
+    updates = {'update': update}
+    with open('updates.json', 'w') as f:
+        json.dump(updates, f, default=str)
+
+    return uk, nat, reg, utlas, ltlas, las, uk_places, la_places
+
+
+with st.spinner('Getting your data....'):
+    uk, nat, reg, utlas, ltlas, las, uk_places, la_places = squirrelling_data(update)
+    st.success('Done!')
+
+
+st.dataframe(nat)
+st.write(nat.columns)

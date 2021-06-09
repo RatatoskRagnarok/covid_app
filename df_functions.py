@@ -84,5 +84,8 @@ def prep_uk_df(url_list):
     if 'totalPeopleVaccinatedFirstDose' in df.columns:
         df['peopleVaccinatedFirstDosePercentage'] = (df.totalPeopleVaccinatedFirstDose / df.population) * 100
 
+    # change name of outer hebrides place
+    df.areaName.replace({'Na h-Eileanan Siar': 'Comhairle nan Eilean Siar'}, inplace=True)
+
     df.dropna(how='all', axis=1, inplace=True)
     return df
