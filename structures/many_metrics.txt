@@ -1,0 +1,14 @@
+areaType
+areaName
+areaCode
+date
+newCasesBySpecimenDate
+cumCasesBySpecimenDateRate
+cumCasesBySpecimenDate
+newDeaths28DaysByDeathDate
+cumDeaths28DaysByDeathDate
+cumDeaths28DaysByDeathDateRate
+newAdmissions
+cumAdmissions
+covidOccupiedMVBeds
+hospitalCases

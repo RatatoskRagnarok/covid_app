@@ -1,0 +1,10 @@
+areaName
+areaType
+areaCode
+date
+cumCasesBySpecimenDate
+cumCasesBySpecimenDateRate
+cumDeaths28DaysByDeathDate
+cumDeaths28DaysByDeathDateRate
+newCasesBySpecimenDate
+newDeaths28DaysByDeathDate
