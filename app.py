@@ -9,7 +9,7 @@ import streamlit as st
 
 
 from get_data_functions import get_uk_data, uk_dict
-from df_functions import prep_uk_df, rename_columns, add_pop_to_df
+from df_functions import prep_uk_df, rename_columns, add_pop_to_df, prep_msoa, prep_us_df, prep_world_df
 
 # setting page to wide
 st.set_page_config(layout="wide")
@@ -31,17 +31,9 @@ with st.beta_expander('See my data sources...'):
     st.write('US data comes from [Covid ActNow](https://covidactnow.org/?s=1859777) through their API, details of '
              'which are [here](https://apidocs.covidactnow.org/).')
 
-# getting update date
-try:
-    with open('updates.json') as f:
-        updates = json.load(f)
-        update = updates['update']
-except FileNotFoundError:
-    update = None
-
 
 @st.cache
-def squirrelling_data(update):
+def squirrelling_uk_data(today):
     # uk dfs
     uk = prep_uk_df(uk_dict['uk'])
     nat = prep_uk_df(uk_dict['nation'])
@@ -50,27 +42,46 @@ def squirrelling_data(update):
     ltlas = prep_uk_df(uk_dict['ltla'])
     las = pd.concat([utlas, ltlas])
     las = las.reset_index().drop_duplicates(subset=['date', 'areaCode', 'newCases'], keep='first').set_index('date')
-    # TODO msoa
+    # removing msoas, they take too long for too little value
+    # msoa = prep_msoa()
 
     # uk places lists
     uk_places = ['UK'] + list(nat.areaName.unique()) + list(reg.areaName.unique())
     la_places = list(las.areaName.unique())
-    # TODO msoa places
-
-
-    # saving update date
-    update = date.today()
-    updates = {'update': update}
-    with open('updates.json', 'w') as f:
-        json.dump(updates, f, default=str)
+    # msoa_places = list(msoa.areaName2.unique())
 
     return uk, nat, reg, utlas, ltlas, las, uk_places, la_places
 
+@st.cache
+def squirrelling_us_data(today):
+    us = prep_us_df(us=True)
+    states = prep_us_df(state=True)
+    counts = prep_us_df(county=True)
 
-with st.spinner('Getting your data....'):
-    uk, nat, reg, utlas, ltlas, las, uk_places, la_places = squirrelling_data(update)
+    us_places = ['US'] + list(states.areaName.unique())
+    county_places = list(counts.areaName.unique())
+
+    return us, states, counts, us_places, county_places
+
+@st.cache
+def squirrelling_the_world(today):
+    world = prep_world_df()
+    world_places = list(world.areaName.unique())
+    return world, world_places
+
+
+with st.spinner('Getting UK data....'):
+    uk, nat, reg, utlas, ltlas, las, uk_places, la_places = squirrelling_uk_data(date.today())
     st.success('Done!')
 
+with st.spinner('Getting US data.... This can take a while....'):
+    us, states, counts, us_places, county_places = squirrelling_us_data(date.today())
+    st.success('Done!')
+    st.balloons()
 
-st.dataframe(nat)
-st.write(nat.columns)
+with st.spinner('Getting world data...'):
+    world, world_places = squirrelling_the_world(date.today())
+
+
+st.dataframe(world.loc['2021-03-06'])
+st.write(world.columns)
