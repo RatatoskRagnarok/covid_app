@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import pandas as pd
-import streamlit as st
 
 uk_dict = {'uk': ['https://api.coronavirus.data.gov.uk/v2/data?areaType=overview&metric=newCasesBySpecimenDate&metric'
                   '=cumCasesBySpecimenDateRate&metric=cumCasesBySpecimenDate&metric=newDeaths28DaysByDeathDate&metric'
@@ -85,7 +84,8 @@ def get_us_data(us=False, state=False, county=False):
         count_url = f'https://api.covidactnow.org/v2/counties.timeseries.csv?apiKey={api_key}'
         cols = ['date', 'state', 'county', 'fips', 'actuals.cases', 'actuals.newCases', 'metrics.infectionRate',
                 'metrics.testPositivityRatio', 'metrics.caseDensity', 'actuals.icuBeds.currentUsageCovid',
-                'actuals.hospitalBeds.currentUsageCovid', 'actuals.vaccinationsInitiated', 'actuals.vaccinationsCompleted',
+                'actuals.hospitalBeds.currentUsageCovid', 'actuals.vaccinationsInitiated',
+                'actuals.vaccinationsCompleted',
                 'metrics.vaccinationsCompletedRatio', 'actuals.newDeaths', 'actuals.deaths', 'riskLevels.overall',
                 'metrics.vaccinationsInitiatedRatio']
         return pd.read_csv(count_url, dtype={"fips": str}, usecols=cols)

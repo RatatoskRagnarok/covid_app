@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
-import re
 from datetime import timedelta
 
 import geopandas as gpd
 import pandas as pd
 
-from get_data_functions import get_uk_data, uk_dict, get_us_data
+from get_data_functions import get_uk_data, get_us_data
 
 
 def make_population_df():
@@ -319,7 +318,102 @@ def prep_world_df():
 
     df = pd.concat([df, extra])
 
+    # to solve the problem of the above changing the name of the index column
+    df.reset_index(inplace=True)
+    df.rename(columns={'index': 'date'}, inplace=True)
+    df.set_index('date', inplace=True)
+
     # filling in missing bits
     df['lockdownScoreOutOf100'] = df.groupby('iso_code')['lockdownScoreOutOf100'].ffill(limit=7)
 
     return df
+
+
+def since_vaccines(df):
+    """vaccinating got going in 2021"""
+    return df[df.index > '2020-12-31']
+
+
+def since_vaccines_uk(df):
+    """vaccinating started in the UK on 8th december 2020"""
+    return df[df.index >= '2020-12-08']
+
+
+def make_summary(df):
+    """
+    Args:
+        df: df of one place
+
+    Returns: dict of summary information
+
+    """
+    cols = ['areaName', 'newCases', 'totalCases', 'newDeaths', 'totalDeaths']
+    if 'totalVaccinationCompleteCoveragePercentage' in df.columns:
+        cols.append('totalVaccinationCompleteCoveragePercentage')
+    if 'transmissionRate' in df.columns:
+        cols.append('transmissionRate')
+    if 'growthRate' in df.columns:
+        cols.append('growthRate')
+    if 'areaType' in df.columns and len(df.areaType.unique()) > 1:
+        df = df[df.areaType == 'utla']
+    df_summary = df[cols].sort_index(ascending=False)
+    try:
+        newCases, newDeaths, totalCases, totalDeaths = df_summary.loc[~df_summary.isnull().sum(1).astype(bool)].iloc[0][
+            ['newCases', 'newDeaths', 'totalCases', 'totalDeaths']]
+    except IndexError:
+        newCases, newDeaths, totalCases, totalDeaths = df_summary.iloc[0][
+            ['newCases', 'newDeaths', 'totalCases', 'totalDeaths']]
+
+    if 'totalVaccinationCompleteCoveragePercentage' in df_summary.columns:
+        try:
+            vaccs = df_summary.loc[~df_summary.isnull().sum(1).astype(bool)].iloc[0][
+                'totalVaccinationCompleteCoveragePercentage']
+        except IndexError:
+            vaccs = df_summary.iloc[0][
+                'totalVaccinationCompleteCoveragePercentage']
+    else:
+        vaccs = None
+    if 'transmissionRate' in df_summary.columns:
+        try:
+            r = df_summary.loc[~df_summary.isnull().sum(1).astype(bool)].iloc[0]['transmissionRate']
+        except IndexError:
+            r = df_summary.iloc[0]['transmissionRate']
+    else:
+        r = None
+    if 'growthRate' in df_summary.columns:
+        try:
+            grow = df_summary.loc[~df_summary.isnull().sum(1).astype(bool)].iloc[0]['growthRate']
+        except IndexError:
+            grow = df_summary.iloc[0]['growthRate']
+    else:
+        grow = None
+
+    df_summary.reset_index(inplace=True)
+    try:
+        today = df_summary.loc[~df_summary.isnull().sum(1).astype(bool)].iloc[0]['date']
+    except IndexError:
+        today = df_summary.iloc[0]['date']
+    today2 = today.strftime('%d.%m.%Y')
+    lst_week = today - timedelta(days=7)
+
+    df_summary.set_index('date', inplace=True)
+    lstwkcases, lstwkdeaths = df_summary.loc[lst_week][['newCases', 'newDeaths']]
+
+    case_diff = newCases - lstwkcases
+    death_diff = newDeaths - lstwkdeaths
+
+    summary = {'newCases': newCases, 'newDeaths': newDeaths,
+               'totalCases': totalCases, 'totalDeaths': totalDeaths,
+               'vaccs': vaccs, 'r': r, 'grow': grow,
+               'date': today2, 'place': df.areaName[0],
+               'case_diff': case_diff, 'death_diff': death_diff
+               }
+    return summary
+
+
+# TODO might not need this now the geojsons are on github?
+def make_gpd(url):
+    place_gpd = gpd.read_file(url)
+    if len(place_gpd.columns) > 2:
+        place_gpd.rename(columns={place_gpd.columns[1]: 'areaCode'}, inplace=True)
+    return place_gpd[['areaCode', 'geometry']]
