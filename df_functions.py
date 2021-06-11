@@ -25,7 +25,8 @@ def rename_columns(df):
         for letter in col:
             new_txt += letter
         new_txt = new_txt.replace('cum', 'total')
-        new_txt = new_txt.replace('ByPublishDate', '')
+        if not new_txt.startswith('newCases') and not new_txt.startswith('newDeaths'):
+            new_txt = new_txt.replace('ByPublishDate', '')
         new_txt = new_txt.replace('BySpecimenDate', '')
         new_txt = new_txt.replace('ByDeathDate', '')
         new_txt = new_txt.replace('28Days', '')
@@ -347,7 +348,10 @@ def make_summary(df):
     Returns: dict of summary information
 
     """
-    cols = ['areaName', 'newCases', 'totalCases', 'newDeaths', 'totalDeaths']
+    if df.areaName[0] == 'United Kingdom':
+        cols = ['areaName', 'totalCases', 'totalDeaths', 'newCasesByPublishDate', 'newDeathsByPublishDate']
+    else:
+        cols = ['areaName', 'newCases', 'totalCases', 'newDeaths', 'totalDeaths']
     if 'totalVaccinationCompleteCoveragePercentage' in df.columns:
         cols.append('totalVaccinationCompleteCoveragePercentage')
     if 'transmissionRate' in df.columns:
@@ -357,6 +361,8 @@ def make_summary(df):
     if 'areaType' in df.columns and len(df.areaType.unique()) > 1:
         df = df[df.areaType == 'utla']
     df_summary = df[cols].sort_index(ascending=False)
+    df_summary.rename(columns={'newCasesByPublishDate': 'newCases', 'newDeathsByPublishDate': 'newDeaths'}, inplace=True)
+
     try:
         newCases, newDeaths, totalCases, totalDeaths = df_summary.loc[~df_summary.isnull().sum(1).astype(bool)].iloc[0][
             ['newCases', 'newDeaths', 'totalCases', 'totalDeaths']]

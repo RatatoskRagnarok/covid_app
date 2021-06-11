@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
-import json
 from datetime import date
 
-import geopandas as gpd
 import pandas as pd
 import streamlit as st
 
-from get_data_functions import get_uk_data, uk_dict
-from df_functions import prep_uk_df, rename_columns, add_pop_to_df, prep_msoa, prep_us_df, prep_world_df, make_summary
+from df_functions import prep_uk_df, prep_us_df, prep_world_df, make_summary
+from get_data_functions import uk_dict
+from graph_functions import var_readable, new_stuff_graph, uk_new_stuff_graph, many_var_uk, many_var_one_place, \
+    uk_graph_options, uk_rate_graph, uk_r_rate_graph, rate_graph, graph_options, multi_place_graph
 
 # setting page to wide
 st.set_page_config(layout="wide")
@@ -75,9 +75,9 @@ def uk_choice_form(key):
     with st.form(key=key):
         st.write('Choose one of the following options:')
         st.text('If you select one of each option, it will only use the first one!')
-        uk_choice1 = st.selectbox('Choose the whole UK, a nation or region:', [None]+uk_places, key=key)
+        uk_choice1 = st.selectbox('Choose the whole UK, a nation or region:', [None] + uk_places, key=key)
         st.write('OR')
-        uk_choice2 = st.selectbox('Choose a UK local authority:', [None]+la_places, key=key)
+        uk_choice2 = st.selectbox('Choose a UK local authority:', [None] + la_places, key=key)
         submitted = st.form_submit_button('Go!')
 
     if submitted:
@@ -98,9 +98,9 @@ def us_choice_form(key):
     with st.form(key=key):
         st.write('Choose one of the following options:')
         st.text('If you select one of each option, it will only use the first one!')
-        us_choice1 = st.selectbox('Choose the whole US or a state:', [None]+us_places, key=key)
+        us_choice1 = st.selectbox('Choose the whole US or a state:', [None] + us_places, key=key)
         st.write('OR')
-        us_choice2 = st.selectbox('Choose a US county:', [None]+county_places, key=key)
+        us_choice2 = st.selectbox('Choose a US county:', [None] + county_places, key=key)
         submitted = st.form_submit_button('Go!')
 
         if submitted:
@@ -138,6 +138,7 @@ with st.spinner('Getting world data...'):
 with st.beta_container():
     st.header('Summaries')
     st.text('Please note not all data is available for all areas and some places do not update data daily')
+    st.text('Case and death rates for UK areas are by specimen date and likely to be revised upwards')
     with st.beta_expander('Information on missing UK R rate data: '):
         st.text('The UK government stopped giving transmission rate (R) data for the whole UK in March 2021')
         st.text('Transmission rate (R) is available for individual nations in the UK')
@@ -145,18 +146,23 @@ with st.beta_container():
     choose = st.selectbox('Choose a place to show a summary for:', ['Somewhere in the UK',
                                                                     'Somewhere in the US',
                                                                     'Somewhere in the World'], key='summary')
-    place_df = uk
-    if 'UK' in choose:
-        place_df = uk_choice_form('summary')
-    elif 'US' in choose:
-        place_df = us_choice_form('summary')
-    elif 'World' in choose:
-        place_df = world_choice_form('summary')
+    with st.beta_expander('Click here to choose somewhere:'):
+        if 'UK' in choose:
+            place_df = uk_choice_form('summary')
+        elif 'US' in choose:
+            place_df = us_choice_form('summary')
+        elif 'World' in choose:
+            place_df = world_choice_form('summary')
 
     try:
         summary = make_summary(place_df)
     except AttributeError:
-        place_df = uk
+        if 'UK' in choose:
+            place_df = uk
+        elif 'US' in choose:
+            place_df = us
+        else:
+            place_df = world[world.areaName == 'World']
         summary = make_summary(place_df)
 
     st.subheader(f'Latest data for {summary["place"]} as of {summary["date"]}')
@@ -186,5 +192,65 @@ with st.beta_container():
     with st.beta_expander('View raw data:'):
         st.dataframe(place_df.sort_index(ascending=False))
 
+# graphs
+with st.beta_container():
+    st.header('Graphs')
+    # one variable, one place graphs
+    with st.beta_container():
+        st.subheader('Graphs for one variable and one place at a time')
+        choose2 = st.selectbox('Choose a place to show a graph for:', ['Somewhere in the UK',
+                                                                         'Somewhere in the US',
+                                                                         'Somewhere in the World'],
+                               key='oneplacegraphs')
+        with st.beta_expander('Click here to choose somewhere:'):
+            if 'UK' in choose2:
+                place_df = uk_choice_form('oneplacegraphs')
+            elif 'US' in choose2:
+                place_df = us_choice_form('oneplacegraphs')
+            elif 'World' in choose2:
+                place_df = world_choice_form('oneplacegraphs')
 
+        try:
+            place_df = place_df.dropna(how='all', axis=1)
+        except AttributeError:
+            if 'UK' in choose2:
+                place_df = uk
+            elif 'US' in choose2:
+                place_df = us
+            else:
+                place_df = world[world.areaName == 'World'].dropna(how='all', axis=1)
 
+        col1, col2 = st.beta_columns([1, 2])
+        with col1:
+            cols = ['newCases', 'newDeaths', 'newPeopleVaccinatedFirstDose', 'newPeopleVaccinatedComplete',
+                    'hospitalCases',
+                    'covidOccupiedICUBeds', 'newAdmissions', 'newAdmissionsWeekly', 'newIcuAdmissionsWeekly',
+                    'testsPositiveRate', 'newDailyNsoDeaths', 'transmissionRate', 'growthRate']
+            var_names = []
+            for col in cols:
+                if col in place_df.columns:
+                    var_names.append(col)
+            var = st.selectbox('Chose a variable: ', var_names, key='oneplacegraphs', format_func=var_readable)
+            if 'areaType' in place_df.columns:
+                vacc, lockdowns, first_vacc = uk_graph_options(place_df, 'oneplacegraphs')
+            else:
+                vacc = graph_options(place_df, 'oneplacegraphs')
+        with col2:
+            if 'areaType' in place_df.columns:
+                if var == 'testsPositiveRate':
+                    graph = uk_rate_graph(place_df, var, vaccines=vacc, show_vaccines=first_vacc,
+                                          show_lockdowns=lockdowns)
+                elif (var in ['transmissionRate', 'growthRate']) or ('Weekly' in var):
+                    graph = uk_r_rate_graph(place_df, var, vaccines=vacc, show_vaccines=first_vacc,
+                                            show_lockdowns=lockdowns)
+                else:
+                    graph = uk_new_stuff_graph(place_df, var, vaccines=vacc, show_lockdowns=lockdowns,
+                                               show_vaccines=first_vacc)
+            else:
+                if (var in ['transmissionRate', 'testsPositiveRate', 'growthRate']) or ('Weekly' in var):
+                    graph = rate_graph(place_df, var, vaccines=vacc)
+                else:
+                    graph = new_stuff_graph(place_df, var, vaccines=vacc)
+            st.altair_chart(graph, use_container_width=True)
+            with st.beta_expander('View raw data...'):
+                st.dataframe(place_df[['areaName', var]].sort_index(ascending=False))

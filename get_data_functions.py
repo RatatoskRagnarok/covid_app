@@ -18,7 +18,9 @@ uk_dict = {'uk': ['https://api.coronavirus.data.gov.uk/v2/data?areaType=overview
                   '=newPeopleVaccinatedCompleteByPublishDate&metric=newPeopleVaccinatedSecondDoseByPublishDate&metric'
                   '=newPillarOneTwoTestsByPublishDate&format=csv',
                   'https://api.coronavirus.data.gov.uk/v2/data?areaType=overview&metric'
-                  '=cumPeopleVaccinatedSecondDoseByPublishDate&format=csv'],
+                  '=cumPeopleVaccinatedSecondDoseByPublishDate&format=csv',
+                  'https://api.coronavirus.data.gov.uk/v2/data?areaType=overview&metric=newCasesByPublishDate&metric'
+                  '=newDeaths28DaysByPublishDate&format=csv'],
            'nation': ['https://api.coronavirus.data.gov.uk/v2/data?areaType=nation&metric=newCasesBySpecimenDate'
                       '&metric=cumCasesBySpecimenDateRate&metric=cumCasesBySpecimenDate&metric'
                       '=newDeaths28DaysByDeathDate&metric=cumDeaths28DaysByDeathDate&format=csv',
