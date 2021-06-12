@@ -2,7 +2,6 @@
 import ast
 from datetime import timedelta
 
-import geopandas as gpd
 import pandas as pd
 
 from get_data_functions import get_uk_data, get_us_data
@@ -424,11 +423,3 @@ def make_summary(df):
                'case_diff': case_diff, 'death_diff': death_diff
                }
     return summary
-
-
-# TODO might not need this now the geojsons are on github?
-def make_gpd(url):
-    place_gpd = gpd.read_file(url)
-    if len(place_gpd.columns) > 2:
-        place_gpd.rename(columns={place_gpd.columns[1]: 'areaCode'}, inplace=True)
-    return place_gpd[['areaCode', 'geometry']]

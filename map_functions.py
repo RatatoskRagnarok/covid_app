@@ -3,7 +3,6 @@
 import json
 from urllib.request import urlopen
 
-import pandas as pd
 import plotly.express as px
 
 from graph_functions import var_readable
