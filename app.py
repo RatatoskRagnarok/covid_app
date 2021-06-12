@@ -9,6 +9,7 @@ from df_functions import prep_uk_df, prep_us_df, prep_world_df, make_summary
 from get_data_functions import uk_dict
 from graph_functions import var_readable, new_stuff_graph, uk_new_stuff_graph, many_var_uk, many_var_one_place, \
     uk_graph_options, uk_rate_graph, uk_r_rate_graph, rate_graph, graph_options, multi_place_graph
+from map_functions import make_geos, make_uk_map, make_us_map, make_world_map
 
 # setting page to wide
 st.set_page_config(layout="wide")
@@ -79,7 +80,7 @@ def choose_place(key):
         st.write('Choose one of the following options:')
         uk_sel = st.selectbox('Choose the whole UK, a nation or region:', uk_places, key=key)
         st.write('OR')
-        la_sel = st.selectbox('Choose a UK local authority:', [None]+la_places, key=key)
+        la_sel = st.selectbox('Choose a UK local authority:', [None] + la_places, key=key)
 
         if la_sel:
             return las[las.areaName == la_sel].dropna(how='all', axis=1)
@@ -333,3 +334,136 @@ with st.beta_container():
                 var_list = ['areaName'] + var_list
                 st.dataframe(multi_df[var_list].sort_index(ascending=False))
 
+# maps
+with st.beta_container():
+    st.header('Maps')
+    # UK maps
+    with st.beta_container():
+        st.subheader('UK maps')
+
+        col1, col2 = st.beta_columns([1, 2])
+        with col1:
+            level = st.selectbox('Choose a detail level:', ['Nations', 'Regions',
+                                                            'Upper Tier Local Authorities',
+                                                            'Lower Tier Local Authorities'])
+            ind = 1
+            if level == 'Nations':
+                geo = make_geos(
+                    'https://raw.githubusercontent.com/RatatoskRagnarok/covid_app/master/maps/Countries.geojson')
+                df = nat
+                ind = 9
+                if var == 'transmissionRate':
+                    df['transmissionRate'] = df.groupby('areaName')['transmissionRate'].bfill(limit=7)
+            elif level == 'Regions':
+                geo = make_geos(
+                    'https://raw.githubusercontent.com/RatatoskRagnarok/covid_app/master/maps/Regions.geojson')
+                df = reg
+            elif 'Upper' in level:
+                geo = make_geos(
+                    'https://raw.githubusercontent.com/RatatoskRagnarok/covid_app/master/maps/utlas.geojson')
+                df = utlas
+            elif 'Lower' in level:
+                geo = make_geos(
+                    'https://raw.githubusercontent.com/RatatoskRagnarok/covid_app/master/maps/ltlas.geojson')
+                df = ltlas
+
+            var_options = df.columns
+            var_options = [var for var in var_options[3:] if
+                           ('Rolling' not in var) and ('Max' not in var) and ('Min' not in var)]
+            var = st.selectbox('Select an option:', sorted(var_options), format_func=var_readable, index=ind)
+
+            place_df = df[['areaType', 'areaCode', 'areaName', var]].dropna(subset=[var])
+
+            date = st.date_input('Choose a date', value=place_df.index.max().to_pydatetime(),
+                                 min_value=place_df.index.min().to_pydatetime(),
+                                 max_value=place_df.index.max().to_pydatetime(), key='uk_map')
+
+        with col2:
+            with col2:
+                mapses = make_uk_map(geo, place_df, var, date)
+                st.plotly_chart(mapses, height=800, use_container_width=True)
+                with st.beta_expander('View raw data...'):
+                    st.dataframe(place_df.loc[f'{date}'])
+
+    # us maps
+    with st.beta_container():
+        st.subheader('US maps')
+        st.text('Not all places have data for every date!')
+        col1, col2 = st.beta_columns([1, 2])
+        with col1:
+            level = st.selectbox('Choose a detail level:', ['States', 'Counties'])
+
+            if level == 'States':
+                geo = make_geos('https://eric.clst.org/assets/wiki/uploads/Stuff/gz_2010_us_040_00_20m.json')
+                df = states
+                var_options = df.columns
+                var_options = [var for var in var_options[4:] if 'Name' not in var]
+                us_counties = False
+            elif level == 'Counties':
+                geo = make_geos('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json')
+                df = counts
+                var_options = df.columns
+                var_options = [var for var in var_options[3:] if 'ame' not in var]
+                us_counties = True
+
+            if us_counties:
+                ind = 5
+            else:
+                ind = 17
+
+            var = st.selectbox('Select an option:', sorted(var_options), format_func=var_readable, index=ind)
+            place_df = df[['fips', 'areaName', var]].dropna(subset=[var])
+
+            # try and get enough data on the map to look sensible...
+            select_date = place_df.index.max()
+            target = len(place_df.areaName.unique())
+            limit = 10
+            while len(place_df.loc[select_date].areaName.unique()) < target and limit > 0:
+                select_date = select_date - pd.Timedelta(1, unit='D')
+                limit -= 1
+
+            date = st.date_input('Choose a date', value=select_date.to_pydatetime(),
+                                 min_value=place_df.index.min().to_pydatetime(),
+                                 max_value=place_df.index.max().to_pydatetime(), key='us_map')
+
+        with col2:
+            mapses = make_us_map(geo, place_df, var, date, us_counties)
+            st.plotly_chart(mapses, height=800, use_container_width=True)
+            with st.beta_expander('View raw data...'):
+                if us_counties and var == 'population':
+                    st.dataframe(place_df.loc['2021-06-01'])
+                else:
+                    st.dataframe(place_df.loc[f'{date}'])
+
+    # world maps
+    with st.beta_container():
+        st.subheader('World maps')
+        st.text('Not all places have data for every date')
+        col1, col2 = st.beta_columns([1, 2])
+
+        with col1:
+            var_options = world.columns
+            var_options = [var for var in var_options[3:] if
+                           ('smoothed' not in var) and ('new_' not in var) and ('total_' not in var) and (
+                                   'weekly_' not in var) and ('per_' not in var) and ('units' not in var)]
+            var = st.selectbox('Select an option:', sorted(var_options), format_func=var_readable, index=21)
+
+            place_df = world[['areaName', 'iso_code', 'continent', var]].dropna(subset=[var, 'continent'], how='any')
+            geo = make_geos(
+                'https://raw.githubusercontent.com/RatatoskRagnarok/covid_app/master/maps/world_countries.geojson')
+
+            date = st.date_input('Choose a date', value=place_df.index.max().to_pydatetime(),
+                                 min_value=place_df.index.min().to_pydatetime(),
+                                 max_value=place_df.index.max().to_pydatetime(), key='world_map')
+
+        with col2:
+            mapses = make_world_map(geo, place_df, var, date)
+            st.plotly_chart(mapses, height=800, use_container_width=True)
+            with st.beta_expander('View raw data...'):
+                if var in ['population', 'human_development_index', 'life_expectancy', 'hospital_beds_per_thousand',
+                           'handwashing_facilities', 'male_smokers', 'female_smokers', 'diabetes_prevalence',
+                           'cardiovasc_death_rate', 'extreme_poverty', 'gdp_per_capita', 'aged_70_older',
+                           'aged_65_older', 'median_age', 'population_density']:
+                    st.dataframe(place_df.loc['2021-05-27'])
+                else:
+                    st.dataframe(place_df.loc[f'{date}'])
