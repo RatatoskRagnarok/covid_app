@@ -71,58 +71,41 @@ def squirrelling_the_world(today):
     return world, world_places
 
 
-def uk_choice_form(key):
-    with st.form(key=key):
+def choose_place(key):
+    sel_1 = st.selectbox('Choose an option:', ['Somewhere in the UK',
+                                               'Somewhere in the US',
+                                               'Somewhere in the World'], key=key)
+    if 'UK' in sel_1:
         st.write('Choose one of the following options:')
-        st.text('If you select one of each option, it will only use the first one!')
-        uk_choice1 = st.selectbox('Choose the whole UK, a nation or region:', [None] + uk_places, key=key)
+        uk_sel = st.selectbox('Choose the whole UK, a nation or region:', uk_places, key=key)
         st.write('OR')
-        uk_choice2 = st.selectbox('Choose a UK local authority:', [None] + la_places, key=key)
-        submitted = st.form_submit_button('Go!')
+        la_sel = st.selectbox('Choose a UK local authority:', [None]+la_places, key=key)
 
-    if submitted:
-        if uk_choice1 and uk_choice2:
-            st.error('One of the values needs to be None!')
-        if uk_choice1:
-            if uk_choice1 == 'UK':
-                return uk
-            if uk_choice1 in nat.areaName.unique():
-                return nat[nat.areaName == uk_choice1]
-            else:
-                return reg[reg.areaName == uk_choice1]
-        if uk_choice2 and not uk_choice1:
-            return las[las.areaName == uk_choice2]
+        if la_sel:
+            return las[las.areaName == la_sel].dropna(how='all', axis=1)
 
+        if uk_sel == 'UK' and la_sel is None:
+            return uk
+        elif uk_sel in nat.areaName.unique():
+            return nat[nat.areaName == uk_sel]
+        else:
+            return reg[reg.areaName == uk_sel]
 
-def us_choice_form(key):
-    with st.form(key=key):
-        st.write('Choose one of the following options:')
-        st.text('If you select one of each option, it will only use the first one!')
-        us_choice1 = st.selectbox('Choose the whole US or a state:', [None] + us_places, key=key)
+    elif 'US' in sel_1:
+        us_sel = st.selectbox('Choose the whole US or a state:', us_places, key=key)
         st.write('OR')
-        us_choice2 = st.selectbox('Choose a US county:', [None] + county_places, key=key)
-        submitted = st.form_submit_button('Go!')
+        count_sel = st.selectbox('Choose a US county:', [None] + county_places, key=key)
 
-        if submitted:
-            if us_choice1 and us_choice2:
-                st.error('One of the values needs to be None!')
-            if us_choice1:
-                if us_choice1 == 'US':
-                    return us
-                else:
-                    return states[states.areaName == us_choice1]
-            if us_choice2 and not us_choice1:
-                return counts[counts.areaName == us_choice2]
+        if count_sel:
+            return counts[counts.areaName == count_sel].dropna(how='all', axis=1)
+        elif us_sel == 'US':
+            return us
+        else:
+            return states[states.areaName == us_sel].dropna(how='all', axis=1)
 
-
-def world_choice_form(key):
-    with st.form(key=key):
-        st.write('Choose somewhere in the world!')
-        world_choice = st.selectbox('Choose a place in the world:', world_places, key=key)
-        submitted = st.form_submit_button('Go!')
-
-        if submitted:
-            return world[world.areaName == world_choice]
+    elif 'World' in sel_1:
+        world_sel = st.selectbox('Choose somewhere in the world:', world_places, index=225, key=key)
+        return world[world.areaName == world_sel].dropna(how='all', axis=1)
 
 
 with st.spinner('Getting UK data....'):
@@ -143,26 +126,9 @@ with st.beta_container():
         st.text('The UK government stopped giving transmission rate (R) data for the whole UK in March 2021')
         st.text('Transmission rate (R) is available for individual nations in the UK')
         st.text('Or go to "World" and look at their UK entry.')
-    choose = st.selectbox('Choose a place to show a summary for:', ['Somewhere in the UK',
-                                                                    'Somewhere in the US',
-                                                                    'Somewhere in the World'], key='summary')
-    with st.beta_expander('Click here to choose somewhere:'):
-        if 'UK' in choose:
-            place_df = uk_choice_form('summary')
-        elif 'US' in choose:
-            place_df = us_choice_form('summary')
-        elif 'World' in choose:
-            place_df = world_choice_form('summary')
 
-    try:
-        summary = make_summary(place_df)
-    except AttributeError:
-        if 'UK' in choose:
-            place_df = uk
-        elif 'US' in choose:
-            place_df = us
-        else:
-            place_df = world[world.areaName == 'World']
+    with st.beta_expander('Click here to choose somewhere:'):
+        place_df = choose_place('summary')
         summary = make_summary(place_df)
 
     st.subheader(f'Latest data for {summary["place"]} as of {summary["date"]}')
@@ -198,27 +164,8 @@ with st.beta_container():
     # one variable, one place graphs
     with st.beta_container():
         st.subheader('Graphs for one variable and one place at a time')
-        choose2 = st.selectbox('Choose a place to show a graph for:', ['Somewhere in the UK',
-                                                                         'Somewhere in the US',
-                                                                         'Somewhere in the World'],
-                               key='oneplacegraphs')
-        with st.beta_expander('Click here to choose somewhere:'):
-            if 'UK' in choose2:
-                place_df = uk_choice_form('oneplacegraphs')
-            elif 'US' in choose2:
-                place_df = us_choice_form('oneplacegraphs')
-            elif 'World' in choose2:
-                place_df = world_choice_form('oneplacegraphs')
-
-        try:
-            place_df = place_df.dropna(how='all', axis=1)
-        except AttributeError:
-            if 'UK' in choose2:
-                place_df = uk
-            elif 'US' in choose2:
-                place_df = us
-            else:
-                place_df = world[world.areaName == 'World'].dropna(how='all', axis=1)
+        with st.beta_expander('Click here to choose a place:'):
+            place_df = choose_place('onevaroneplace')
 
         col1, col2 = st.beta_columns([1, 2])
         with col1:
@@ -232,9 +179,9 @@ with st.beta_container():
                     var_names.append(col)
             var = st.selectbox('Chose a variable: ', var_names, key='oneplacegraphs', format_func=var_readable)
             if 'areaType' in place_df.columns:
-                vacc, lockdowns, first_vacc = uk_graph_options(place_df, 'oneplacegraphs')
+                vacc, lockdowns, first_vacc = uk_graph_options(place_df, 'onevaroneplace')
             else:
-                vacc = graph_options(place_df, 'oneplacegraphs')
+                vacc = graph_options(place_df, 'onevaroneplace')
         with col2:
             if 'areaType' in place_df.columns:
                 if var == 'testsPositiveRate':
@@ -254,3 +201,135 @@ with st.beta_container():
             st.altair_chart(graph, use_container_width=True)
             with st.beta_expander('View raw data...'):
                 st.dataframe(place_df[['areaName', var]].sort_index(ascending=False))
+
+    # one place, many variables
+    with st.beta_container():
+        with st.beta_container():
+            st.subheader('Compare several variables in one place')
+            with st.beta_expander('Click here to choose a place:'):
+                place_df = choose_place('manyvar')
+
+            col1, col2 = st.beta_columns([1, 2])
+            with col1:
+                cols = ['hospitalCases', 'covidOccupiedICUBeds', 'newAdmissions', 'newCases', 'newDeaths',
+                        'newPeopleVaccinatedFirstDose', 'newPeopleVaccinatedComplete', 'newDailyNsoDeaths',
+                        'newAdmissionsWeekly',
+                        'newIcuAdmissionsWeekly']
+                var_names = []
+                for col in cols:
+                    if col in place_df.columns:
+                        var_names.append(col)
+                var_list = st.multiselect('Choose variables: ', var_names, default=['newCases', 'newDeaths'],
+                                          format_func=var_readable)
+
+                if 'areaType' in place_df.columns:
+                    vacc, lockdowns, first_vacc = uk_graph_options(place_df, 'manyvar')
+                else:
+                    vacc = graph_options(place_df, 'manyvar')
+            with col2:
+                if 'areaType' in place_df.columns:
+                    graph = many_var_uk(place_df, var_list, vaccines=vacc, show_lockdowns=lockdowns,
+                                        show_vaccines=first_vacc)
+                else:
+                    graph = many_var_one_place(place_df, var_list, vaccines=vacc)
+                st.altair_chart(graph, use_container_width=True)
+                with st.beta_expander('View raw data...'):
+                    var_list = ['areaName'] + var_list
+                    st.dataframe(place_df[var_list].sort_index(ascending=False))
+
+    # one variable several places graph
+    with st.beta_container():
+        st.subheader('Compare one variable in several places:')
+
+        cols = ['newCasesPer100kPeople', 'newCasesPer100kPeopleWeekly', 'totalCasesPer100kPeople',
+                'newDeathsPer100kPeople', 'totalDeathsPer100kPeople',
+                'hospitalCasesPer100kPeople', 'newAdmissionsPer100kPeople', 'newAdmissionsPer100kPeopleWeekly',
+                'covidOccupiedICUBedsPer100kPeople', 'newICUAdmissionsPer100kPeopleWeekly',
+                'newTestsPer100kPeople', 'testsPositiveRate',
+                'PeopleVaccinatedFirstDosePercentage', 'totalVaccinationCompleteCoveragePercentage',
+                'transmissionRate', 'growthRate', 'lockdownScoreOutOf100', 'riskLevels']
+
+        var = st.selectbox('Choose a variable: ', cols, format_func=var_readable)
+        st.text('Choose places to compare')
+        st.text('You can choose places from more than one list')
+        st.text('Some places only have weekly data')
+        st.text('If you want to compare the UK or the US with other countries, choose the versions in the "world" list')
+        s1, s2, s3, s4, s5 = st.beta_columns(5)
+
+        multi_places, multi_places2, multi_places3, multi_places4, multi_places5 = \
+            [], False, False, False, []
+
+        if var in uk.columns:
+            multi_places.append('UK')
+        uk_dfs = [nat, reg]
+        for df in uk_dfs:
+            if var in df.columns:
+                multi_places += list(df.areaName.unique())
+        if var in las.columns:
+            multi_places2 = True
+        if var in us.columns:
+            multi_places3 = True
+            multi_places4 = True
+        if var in world.columns:
+            for place in world.areaName.unique():
+                thing = world[world.areaName == place].dropna(how='all', axis=1)
+                if var in thing.columns:
+                    multi_places5.append(place)
+        df_list = []
+        with s1:
+            if multi_places:
+                mplace1 = st.multiselect('Choose a place in the UK:', multi_places, default=['England'])
+                for place in mplace1:
+                    if place == 'UK':
+                        df_list.append(uk)
+                    if place in ['England', 'Scotland', 'Northern Ireland', 'Wales']:
+                        df_list.append(nat[nat.areaName == place])
+                    else:
+                        df_list.append(reg[reg.areaName == place])
+            else:
+                st.write('No UK places have that data')
+        with s2:
+            if multi_places2:
+                mplace2 = st.multiselect('Choose a UK local authority:', la_places)
+                for place in mplace2:
+                    df_list.append(las[las.areaName == place])
+            else:
+                st.write('No UK local authorities have that data')
+
+        with s3:
+            if multi_places3:
+                mplace3 = st.multiselect('Choose a US state:', us_places, default=['New York'])
+                for place in mplace3:
+                    if place == 'United States':
+                        df_list.append(us)
+                    else:
+                        df_list.append(states[states.areaName == place])
+            else:
+                st.write('No US state has that data')
+        with s4:
+            if multi_places4:
+                mplace4 = st.multiselect('Choose a US county', county_places)
+                for place in mplace4:
+                    df_list.append(counts[counts.areaName == place])
+            else:
+                st.write('No US county has that data')
+        with s5:
+            if multi_places5:
+                mplace5 = st.multiselect('Choose a place in the world:', multi_places5)
+                for place in mplace5:
+                    df_list.append(world[world.areaName == place])
+            else:
+                st.write('No world place has that data')
+
+        col1, col2 = st.beta_columns([1, 2])
+        with col1:
+            vacc = graph_options(place_df, 'manyplacegraphs')
+        with col2:
+            if df_list:
+                multi_df = pd.concat(df_list)
+                graph = multi_place_graph(multi_df, var, vaccines=vacc)
+            st.altair_chart(graph, use_container_width=True)
+            with st.beta_expander('View raw data...'):
+                var_list = ['areaName'] + var_list
+                st.dataframe(multi_df[var_list].sort_index(ascending=False))
+

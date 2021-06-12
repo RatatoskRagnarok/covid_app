@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import ast
 from datetime import timedelta
 
 import geopandas as gpd
@@ -348,6 +348,7 @@ def make_summary(df):
     Returns: dict of summary information
 
     """
+
     if df.areaName[0] == 'United Kingdom':
         cols = ['areaName', 'totalCases', 'totalDeaths', 'newCasesByPublishDate', 'newDeathsByPublishDate']
     else:
@@ -360,8 +361,16 @@ def make_summary(df):
         cols.append('growthRate')
     if 'areaType' in df.columns and len(df.areaType.unique()) > 1:
         df = df[df.areaType == 'utla']
+
+    # adding in for places that have no deaths
+    if 'newDeaths' not in df.columns:
+        df['newDeaths'] = 0
+    if 'totalDeaths' not in df.columns:
+        df['totalDeaths'] = 0
+
     df_summary = df[cols].sort_index(ascending=False)
-    df_summary.rename(columns={'newCasesByPublishDate': 'newCases', 'newDeathsByPublishDate': 'newDeaths'}, inplace=True)
+    df_summary.rename(columns={'newCasesByPublishDate': 'newCases', 'newDeathsByPublishDate': 'newDeaths'},
+                          inplace=True)
 
     try:
         newCases, newDeaths, totalCases, totalDeaths = df_summary.loc[~df_summary.isnull().sum(1).astype(bool)].iloc[0][
@@ -403,7 +412,7 @@ def make_summary(df):
     lst_week = today - timedelta(days=7)
 
     df_summary.set_index('date', inplace=True)
-    lstwkcases, lstwkdeaths = df_summary.loc[lst_week][['newCases', 'newDeaths']]
+    lstwkcases, lstwkdeaths = df_summary.loc[lst_week][['newCases', 'newDeaths']].fillna(0)
 
     case_diff = newCases - lstwkcases
     death_diff = newDeaths - lstwkdeaths
