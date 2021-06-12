@@ -1,8 +1,7 @@
+name:
+covid
 channels:
   - conda-forge
-  - https://conda.anaconda.org/conda-forge/
-  - http://repo.anaconda.com/pkgs/main
-  - defaults
 dependencies:
   - altair=4.1.0=py_1
   - pandas=1.2.4
