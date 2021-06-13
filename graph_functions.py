@@ -128,7 +128,7 @@ def new_stuff_graph(df, var, vaccines=False): # TODO sort for weekly variablesz
         empty="none",
         clear="mouseout")
 
-    base = alt.Chart(source).encode(x=alt.X('Date:T', axis=alt.Axis(title='Date', format=" %d %b %Y"))).properties(title=f'{var_string} in {name})')
+    base = alt.Chart(source).encode(x=alt.X('Date:T', axis=alt.Axis(title='Date', format=" %d %b %Y"))).properties(title=f'{var_string} in {name}')
 
     bar = base.mark_bar(**{"opacity": 0.5}).encode(
         y=alt.Y(f'{var_string}:Q', axis=alt.Axis(title=f'{var_string}'))).interactive()

@@ -446,7 +446,7 @@ with st.beta_container():
             var_options = [var for var in var_options[3:] if
                            ('smoothed' not in var) and ('new_' not in var) and ('total_' not in var) and (
                                    'weekly_' not in var) and ('per_' not in var) and ('units' not in var)]
-            var = st.selectbox('Select an option:', sorted(var_options), format_func=var_readable, index=21)
+            var = st.selectbox('Select an option:', sorted(var_options), format_func=var_readable, index=20)
 
             place_df = world[['areaName', 'iso_code', 'continent', var]].dropna(subset=[var, 'continent'], how='any')
             geo = make_geos(
